@@ -14,13 +14,35 @@ python3 boopface/build.py                                     # install with sav
 python3 boopface/build.py --set skin=305 --set motion=reduce  # change a documented option
 ```
 
-The settings sheet on the phone exposes the library's own options — `skin`, `color`, `auto-sleep`,
+The gear sheet on the phone exposes the library's own options — `skin`, `color`, `auto-sleep`,
 `wake-on`, `motion`, `press-squeeze`, `antenna-drag`, plus `setPointerFollow()` and
-`setHeadRoundness()`. A sandboxed iframe has no storage, so a change made on the phone lasts until
-the panel reloads; `--set` bakes it in permanently.
+`setHeadRoundness()`. A sandboxed iframe has no storage, so a change made on the phone only lives
+until the panel reloads; `--set` bakes it in permanently.
 
-Note: BoopFace refuses `press-squeeze` for `pointerType === 'touch'` (it is a mouse gesture), so on a
-touchscreen the gesture needs a synthetic mouse event. `build.py` sends one when the option is on.
+BoopFace refuses `press-squeeze` for `pointerType === 'touch'` (it is a mouse gesture), so on a
+touchscreen the gesture needs a synthetic mouse event, which `build.py` sends when the option is on.
+
+### What the face reacts to
+
+| Signal | Face |
+|---|---|
+| Agent session `busy` / `waiting` | waiting animation / `wary`, with a nudge every 8 s while an approval is pending |
+| Microphone or camera in use | `inspect` / `wary` |
+| DeepSeek balance under $1 / $0.10 | `wary` / `failure` |
+| Phone battery under 20 % / 10 %, unplugged | `wary` / `failure`, plus a battery glyph above the head |
+| 23:00–07:00 | sleeps, dimmed |
+| Idle 12+ minutes | occasional `bored` glance |
+| Agent stream silent 15 s | `failure`, `success` when it returns |
+
+### Music
+
+While the panel reports playback it shows an equalizer (12 bars), a 3 % bob at 120 BPM and a
+conic aura rotating around the head; the face runs BoopFace's `startWaiting({variant:'wave'})`
+groove. Touching the face pauses the groove for 20 s.
+
+None of it follows the actual audio: an `html` widget receives `playing`, `volume` and `muted`
+only — no levels and no spectrum — so every animation runs on a fixed 125 ms beat grid. Real
+per-band reaction would need the app to forward `spectrum` frames to widgets.
 
 ## ai-quota/
 
@@ -40,10 +62,10 @@ systemctl --user daemon-reload && systemctl --user enable --now phonebox-deepsee
 
 ## Browser artwork
 
-This branch also fixes `agent/PhoneBox.Agent/Unix/MediaMonitor.cs`: it required an image file
-extension for `file://` artwork, but Chromium publishes the media-session image as an extension-less
-temp file (`/tmp/.org.chromium.Chromium.XXXXXX`), so Brave/Chrome thumbnails were always dropped.
-The extension gate is gone and the existing magic-byte sniff decides.
+This branch also carries two agent changes: `Unix/MediaMonitor.cs` accepts extension-less `file://`
+artwork (Chromium publishes the media-session image as `/tmp/.org.chromium.Chromium.XXXXXX`, which
+the old extension allowlist always dropped), and `/api/state` now exposes the phone's own battery as
+`phone: {level, plugged}`, which the panel already reports to `/api/phone/battery`.
 
 ## Security
 

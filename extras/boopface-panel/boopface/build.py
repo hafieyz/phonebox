@@ -73,16 +73,72 @@ TEMPLATE = """<style>
   .swi button{width:44px;height:26px;border-radius:13px;border:1px solid #2a303a;background:#171b21;
     color:#8a94a3;font-size:11px}
   .swi button.on{border-color:#2dd4bf;color:#2dd4bf}
+  /* while music plays the whole face breathes with it: a 3 % bob at 120 BPM and a soft glow
+     behind the head. Purely rhythmic — the widget has no audio levels to follow. */
+  body.playing #stage{animation:bob 500ms ease-in-out infinite alternate}
+  @keyframes bob{from{transform:scale(1)}to{transform:scale(1.03)} }
+  /* aura: a halo OUTSIDE the head, not a fill behind it. The head is ~821 px on this panel,
+     so a centred radial gradient at 82vmin put every visible stop behind the silhouette —
+     that is why the first two versions looked invisible even though they rendered. */
+  #aura{position:fixed;left:50%;top:50%;pointer-events:none;z-index:0;
+    width:112vmin;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);
+    background:conic-gradient(from 0deg,rgba(20,255,222,.85),rgba(122,92,255,.75),rgba(255,64,158,.65),
+      rgba(255,196,64,.55),rgba(20,255,222,.85));
+    -webkit-mask:radial-gradient(closest-side,transparent 50%,#000 58%,#000 66%,transparent 78%);
+    mask:radial-gradient(closest-side,transparent 50%,#000 58%,#000 66%,transparent 78%);
+    animation:auraspin 16s linear infinite,glowpulse 1s ease-in-out infinite alternate}
+  @keyframes auraspin{from{transform:translate(-50%,-50%) rotate(0deg)}
+    to{transform:translate(-50%,-50%) rotate(360deg)} }
+  @keyframes glowpulse{from{opacity:.55}to{opacity:1} }
+  #stage{position:relative;z-index:1}
+  /* equalizer under the chin while something is playing (decorative: the widget gets
+     media.playing, not audio levels, so these follow a rhythm, not the song) */
+  #eq{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:none;align-items:flex-end;
+    gap:5px;height:calc(14px + 22px * var(--amp,.8));z-index:3;transition:height .35s ease;
+    filter:drop-shadow(0 1px 4px rgba(0,0,0,.5))}
+  #eq i{display:block;width:6px;border-radius:3px;height:22%;
+    background:linear-gradient(180deg,#5eead4,#2dd4bf);
+    animation:eqbar 500ms ease-in-out infinite alternate}
+  /* durations are multiples of 125 ms, so they land on the same 120 BPM grid as the bob */
+  #eq i{width:5px;border-radius:2.5px}
+  #eq i:nth-child(1){animation-duration:500ms;animation-delay:0ms}
+  #eq i:nth-child(2){animation-duration:625ms;animation-delay:-125ms}
+  #eq i:nth-child(3){animation-duration:750ms;animation-delay:-250ms}
+  #eq i:nth-child(4){animation-duration:875ms;animation-delay:-375ms}
+  #eq i:nth-child(5){animation-duration:1000ms;animation-delay:-500ms}
+  #eq i:nth-child(6){animation-duration:1125ms;animation-delay:-625ms}
+  #eq i:nth-child(7){animation-duration:500ms;animation-delay:-125ms}
+  #eq i:nth-child(8){animation-duration:750ms;animation-delay:-375ms}
+  #eq i:nth-child(9){animation-duration:875ms;animation-delay:-250ms}
+  #eq i:nth-child(10){animation-duration:625ms;animation-delay:-500ms}
+  #eq i:nth-child(11){animation-duration:1000ms;animation-delay:-125ms}
+  #eq i:nth-child(12){animation-duration:750ms;animation-delay:-625ms}
+  #eq.muted i{background:#5b6470;height:14%;animation-play-state:paused}
+  @keyframes eqbar{from{height:18%}to{height:100%} }
+  /* battery above the head: only when it is low and unplugged */
+  #batt{position:fixed;top:9px;left:50%;transform:translateX(-50%);display:none;align-items:center;
+    filter:drop-shadow(0 1px 3px rgba(0,0,0,.55));z-index:4}
+  #batt.on{display:flex}
+  #batt .shell{width:52px;height:22px;border:2px solid #8a94a3;border-radius:5px;padding:2px}
+  #batt .cap{width:4px;height:9px;background:#8a94a3;border-radius:0 2px 2px 0}
+  #batt .fill{height:100%;width:0%;background:#8a94a3;border-radius:2px;transition:width .4s ease,background .4s ease}
+  #batt.warn .shell{border-color:#ffb74d} #batt.warn .cap{background:#ffb74d} #batt.warn .fill{background:#ffb74d}
+  #batt.err .shell{border-color:#ff5252} #batt.err .cap{background:#ff5252} #batt.err .fill{background:#ff5252}
+  #batt.err{animation:battpulse 1.1s ease-in-out infinite}
+  @keyframes battpulse{0%,100%{opacity:1}50%{opacity:.3} }
   #toast{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:rgba(23,27,33,.92);
     border:1px solid #2a303a;color:#e8ecf1;font-size:12px;padding:6px 12px;border-radius:14px;
     opacity:0;transition:opacity .25s;pointer-events:none;z-index:9}
   #toast.show{opacity:1}
   .fail{position:fixed;inset:auto 0 8px;text-align:center;font-size:12px;color:#8a94a3}
 </style>
+<div id="aura" style="display:none"></div>
 <div id="stage"><boop-face id="avatar" press-squeeze="false" antenna-drag="false"></boop-face></div>
+<div id="batt"><div class="shell"><div class="fill"></div></div><div class="cap"></div></div>
+<div id="eq" style="display:none"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
 <div id="tools"><button id="pick" title="skins">🎨</button><button id="gear" title="settings">⚙️</button></div>
-<div id="skins" class="panel"><div class="bar"><b>Skin</b><button id="skinsClose">close</button></div><div id="list"></div></div>
-<div id="settings" class="panel"><div class="bar"><b>BoopFace</b><button id="setClose">close</button></div><div id="form"></div></div>
+<div id="skins" class="panel" style="display:none"><div class="bar"><b>Skin</b><button id="skinsClose">close</button></div><div id="list"></div></div>
+<div id="settings" class="panel" style="display:none"><div class="bar"><b>BoopFace</b><button id="setClose">close</button></div><div id="form"></div></div>
 <div id="toast"></div>
 <script>{bundle}</script>
 <script type="module">
@@ -113,12 +169,28 @@ try { await window.BoopFace?.loadSkins?.(); } catch (e) { console.warn('skins:',
 
 if (S.roundness === null || S.roundness === undefined) {
   try { S.roundness = a.getHeadRoundness?.() ?? 0.5; } catch (e) {}
+  CFG.roundness = S.roundness; // same value, so it is not a change
 }
 
 const h = new Date().getHours();
 if (h >= 23 || h < 7) document.body.style.opacity = '0.55';
 
-let mode = 'idle', skin = S.skin, toastTimer = 0;
+let mode = 'idle', skin = S.skin, toastTimer = 0, alert = '', playing = null, balance = '', battery = '', battLevel = 0;
+// what the face shows when nothing else is happening: an empty wallet or a dying phone
+const worry = () => (battery === 'err' || balance === 'err') ? 'failure'
+  : (battery === 'warn' || balance === 'warn') ? 'wary' : 'idle';
+let online = true, lastState = 0;
+const eqEl = document.getElementById('eq');
+const auraEl = document.getElementById('aura');
+const battEl = document.getElementById('batt');
+const battFill = battEl ? battEl.querySelector('.fill') : null;
+const paintBattery = () => {
+  if (!battEl || !battFill) return;
+  battEl.classList.toggle('on', battery !== '');
+  battEl.classList.toggle('warn', battery === 'warn');
+  battEl.classList.toggle('err', battery === 'err');
+  if (battery !== '') battFill.style.width = Math.max(6, Math.min(100, battLevel)) + '%';
+};
 const say = (t) => {
   toast.textContent = t; toast.classList.add('show');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 1600);
@@ -249,7 +321,7 @@ const buildSettings = () => {
   const skinLab = document.createElement('label'); skinLab.textContent = 'Skin';
   const skinBtn = document.createElement('button');
   skinBtn.textContent = 'browse'; skinBtn.style.cssText = 'border:1px solid #2a303a;background:#171b21;color:#e8ecf1;border-radius:10px;height:30px;padding:0 12px;font-size:12px';
-  skinBtn.onclick = () => {{ skinsEl.classList.add('open'); buildSkins(); mark(Number(S.skin) || 0); }};
+  skinBtn.onclick = () => {{ skinsEl.style.display = 'flex'; buildSkins(); mark(Number(S.skin) || 0); }};
   skinRow.append(skinLab, skinBtn);
   frag.append(skinRow);
 
@@ -282,18 +354,13 @@ const buildSettings = () => {
   frag.append(boolRow('Press squeeze', 'press and hold the face', 'pressSqueeze'));
   frag.append(boolRow('Antenna drag', 'drag the antenna', 'antennaDrag'));
 
-  const note = document.createElement('div');
-  note.style.cssText = 'color:#6b7280;font-size:11px;line-height:1.6;padding:14px 2px';
-  note.textContent = 'Changes apply immediately. The page cannot save them (sandboxed, no storage), '
-    + 'so after a reload the values written on the computer come back.';
-  frag.append(note);
   formEl.append(frag);
 };
 
-document.getElementById('pick').onclick = () => {{ skinsEl.classList.add('open'); buildSkins(); mark(Number(S.skin) || 0); }};
-document.getElementById('gear').onclick = () => {{ settingsEl.classList.add('open'); buildSettings(); }};
-document.getElementById('skinsClose').onclick = () => skinsEl.classList.remove('open');
-document.getElementById('setClose').onclick = () => settingsEl.classList.remove('open');
+document.getElementById('pick').onclick = () => {{ skinsEl.style.display = 'flex'; buildSkins(); mark(Number(S.skin) || 0); }};
+document.getElementById('gear').onclick = () => {{ settingsEl.style.display = 'flex'; buildSettings(); }};
+document.getElementById('skinsClose').onclick = () => { skinsEl.style.display = 'none'; };
+document.getElementById('setClose').onclick = () => { settingsEl.style.display = 'none'; };
 
 /* ---------- behaviour ---------- */
 const setMode = (next) => {
@@ -301,10 +368,24 @@ const setMode = (next) => {
   const was = mode;
   mode = next;
   if (next === 'busy') a.startWaiting?.({{ variant: 'wrap' }});
-  else if (next === 'wait') a.play?.('wary');
+  else if (next === 'wait') { a.play?.('wary'); nudge(true); }
   else if (was === 'busy') a.play?.('success');
-  else if (was === 'wait') a.play?.('affirm');
+  else if (was === 'wait') { nudge(false); a.play?.('affirm'); }
   else a.stopWaiting?.();
+  updateMusicFace();
+};
+
+// a pending approval is easy to miss, so the face keeps looking over until it is answered
+const NUDGE_MS = 8000;
+let nudgeTimer = 0, nudgeFlip = false;
+const nudge = (on) => {
+  if (!on) { if (nudgeTimer) { clearInterval(nudgeTimer); nudgeTimer = 0; } return; }
+  if (nudgeTimer) return;
+  nudgeTimer = setInterval(() => {
+    if (mode !== 'wait') { clearInterval(nudgeTimer); nudgeTimer = 0; return; }
+    nudgeFlip = !nudgeFlip;
+    a.play?.(nudgeFlip ? 'inspect' : 'wary');
+  }, NUDGE_MS);
 };
 
 // BoopFace refuses press-squeeze for pointerType 'touch' (gestures.js:72), so a phone can never
@@ -339,13 +420,127 @@ try {
     else if (s.some((x) => x?.status === 'busy')) setMode('busy');
     else setMode('idle');
   });
-  let was = null;
+
+  // the DeepSeek balance is the one number this face is the face of: worry before it runs dry
+  phonebox.on('push', (v) => {
+    const d = v?.deepseek;
+    if (!d) return;
+    const n = parseFloat(String(d.value ?? '').replace(/[^0-9.]/g, ''));
+    const next = !isFinite(n) ? '' : n < 0.10 ? 'err' : n < 1 ? 'warn' : '';
+    if (next === balance) return;
+    balance = next;
+    if (alert || mode !== 'idle') return;
+    a.play?.(worry());
+  });
+
+  // privacy: the microphone or the camera is in use. The camera is the louder signal and both
+  // outrank the ambient media reaction, so "someone is recording" always wins the face.
   phonebox.on('state', (st) => {
-    const playing = !!st?.media?.playing;
-    if (was !== null && playing !== was && mode === 'idle') a.play?.(playing ? 'success' : 'idle');
-    was = playing;
+    lastState = Date.now();
+    if (!online) { online = true; a.play?.('success'); }
+    const p = st?.privacy;
+    const now = p ? (p.camera ? 'camera' : p.mic ? 'mic' : '') : '';
+    if (now !== alert) {
+      alert = now;
+      if (now === 'camera') a.play?.('wary');
+      else if (now === 'mic') a.play?.('inspect');
+      else if (mode === 'idle') a.play?.(worry());
+      updateMusicFace();
+    }
+    // the phone's own battery, which the app reports every 30 s into state.phone
+    const ph = st?.phone;
+    const bat = ph && typeof ph.level === 'number'
+      ? (ph.plugged ? '' : ph.level < 10 ? 'err' : ph.level < 20 ? 'warn' : '') : '';
+    if (ph && typeof ph.level === 'number') battLevel = ph.level;
+    if (bat !== battery) {
+      battery = bat;
+      paintBattery();
+      if (!alert && mode === 'idle') a.play?.(worry());
+    }
+    const mediaOn = !!st?.media?.playing;
+    if (mediaOn !== playing) {
+      if (eqEl) {
+        eqEl.style.display = mediaOn ? 'flex' : 'none';
+        if (mediaOn) [...eqEl.children].forEach((b) => {
+          b.style.animation = 'none'; void b.offsetWidth; b.style.animation = '';
+        });
+      }
+      if (auraEl) auraEl.style.display = mediaOn ? 'block' : 'none';
+      document.body.classList.toggle('playing', mediaOn); // a sleeping face may still breathe
+      if (playing !== null && mode === 'idle' && !alert && !slept) a.play?.(mediaOn ? 'success' : 'idle');
+    }
+    playing = mediaOn;
+    updateMusicFace();
+
+    // the bars follow the computer's output volume and grey out when muted: real signals,
+    // not guessed audio levels
+    if (eqEl) {
+      const a = st?.audio;
+      const vol = typeof a?.volume === 'number' ? a.volume : 60;
+      document.body.style.setProperty('--amp', (0.45 + 0.55 * (vol / 100)).toFixed(2));
+      eqEl.classList.toggle('muted', !!a?.muted);
+    }
   });
 }} catch (e) {{ console.warn(e); }}
+
+// while music plays the face grooves with BoopFace's "waiting wave": the eyes bob up and
+// down in turn, looping until playback stops or something more important takes the face
+let musicFaceOn = false, touchUntil = 0, touchTimer = 0;
+const TOUCH_PAUSE_MS = 20000;
+const updateMusicFace = () => {
+  const on = playing === true && mode === 'idle' && !alert && Date.now() >= touchUntil;
+  if (on) {
+    if (!musicFaceOn) { musicFaceOn = true; a.startWaiting?.({ variant: 'wave' }); }
+  } else if (musicFaceOn) {
+    musicFaceOn = false;
+    // only take back an animation we own: busy/wait replaced it with their own waiting loop
+    if (mode === 'idle') a.stopWaiting?.();
+  }
+};
+
+// touching the face pauses the music groove: it wakes, plays normally, and only resumes
+// the wave once you have left it alone for a while
+const onFaceTouch = () => {
+  touchUntil = Date.now() + TOUCH_PAUSE_MS;
+  if (musicFaceOn) {
+    musicFaceOn = false;
+    a.stopWaiting?.();
+    a.play?.('wake');
+  }
+  clearTimeout(touchTimer);
+  touchTimer = setTimeout(() => { touchUntil = 0; updateMusicFace(); }, TOUCH_PAUSE_MS);
+};
+addEventListener('pointerdown', onFaceTouch, true);
+
+// watchdog: the stream ticks every second, so 15 s of silence means the panel lost the agent
+const WATCHDOG_MS = 15000;
+lastState = Date.now();
+setInterval(() => {
+  if (!online || Date.now() - lastState <= WATCHDOG_MS) return;
+  online = false;
+  a.play?.('failure');
+}, 5000);
+
+// night: sleep with closed eyes instead of only dimming, and wake in the morning
+const isNight = () => { const h = new Date().getHours(); return h >= 23 || h < 7; };
+let slept = false;
+const settle = () => {
+  const n = isNight();
+  if (n === slept) return;
+  slept = n;
+  if (n) a.play?.('sleep'); else a.play?.('wake');
+};
+settle();
+setInterval(settle, 60000);
+
+// a little life when nothing at all is happening, deliberately rare
+let lastLife = Date.now();
+setInterval(() => {
+  if (slept || alert !== '' || mode !== 'idle') { lastLife = Date.now(); return; }
+  if (Date.now() - lastLife < 12 * 60 * 1000) return;
+  lastLife = Date.now();
+  if (Math.random() < 0.6) a.play?.('bored');
+}, 4 * 60 * 1000);
 </script>
 """
 
@@ -390,6 +585,10 @@ def main():
         raise SystemExit("bundle contains </script")
     html = (TEMPLATE.replace("{{", "{").replace("}}", "}")
             .replace("{bundle}", bundle, 1).replace("{cfg}", json.dumps(cfg)))
+    css = html.split("<style>")[1].split("</style>")[0]
+    if css.count("{") != css.count("}"):
+        raise SystemExit(f"refusing to install: stylesheet braces unbalanced "
+                         f"({css.count('{')} open, {css.count('}')} close)")
 
     with urllib.request.urlopen(AGENT + "/api/settings", timeout=10) as r:
         version = r.headers.get("X-Config-Version")
