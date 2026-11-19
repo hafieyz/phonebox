@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.9.22 — 2026-11-19
+
+Greek, a Trackpad widget, Claude Code session details and chat titles, CPU and GPU temperature on Apple silicon Macs,
+a choice of weather model, stroke icons everywhere, closer media sync, much less CPU for blinking status lights, and a
+macOS Accessibility permission that survives updates.
 
 **Languages**
 - Greek (Ελληνικά): the panel, the settings page, the widget and template catalog, the Android pairing dialogs and a
@@ -18,6 +22,11 @@
   [Prajjwal2404](https://github.com/Prajjwal2404)).
 - Weather: Settings › General › Weather has a temperature unit, Celsius or Fahrenheit, for the clock's weather line
   and the Forecast widget (#256, [haydn9000](https://github.com/haydn9000)).
+- Weather: Settings › General › Weather can pin the Open-Meteo forecast model (GFS, ECMWF, ICON, UKMO, GEM, JMA,
+  Météo-France or CMA) instead of Open-Meteo's automatic best match. Only Automatic and GFS supply every value; other
+  models may leave out the UV index or the chance of rain, and the panel then just leaves those out. Météo-France
+  and CMA forecast about 4 and 5 days, and the Forecast widget shows only the days there are (#271,
+  [sonvc94](https://github.com/sonvc94)).
 - Quota ring: provider list includes Cursor and Grok (Grok uses its own mark), and offers every provider currently
   reported by CodexBar (#260, [ajaybali9](https://github.com/ajaybali9)).
 - AI sessions: Cursor agent chats from `~/.cursor/projects/*/agent-transcripts` can show alongside Claude Code and Codex
@@ -31,6 +40,11 @@
   [Vasilispapg](https://github.com/Vasilispapg)).
 
 **Panel**
+- Less CPU, so a panel on battery lasts longer: the clock's colon, the session status dots, the OBS light, the on-air
+  sign, the dictation microphone and the radio equalizer no longer run endless CSS animations, which made the phone
+  draw a frame on every display refresh (120 a second on some phones) while they were on screen. On a Galaxy S25 Ultra
+  the clock page went from about 18 % to 9 % of a core. The colon blinks as before; the other lights pulse in two steps
+  instead of fading (#273, #274, [Vasilispapg](https://github.com/Vasilispapg)).
 - Media: the position bar is a slider; hold it to see where the song will continue, and it seeks when you let go. The
   song time follows the computer more closely, also with Spotify on macOS, which reports no position of its own, and
   no longer steps back and forth.
