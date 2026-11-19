@@ -146,6 +146,8 @@ public sealed class DisplayConfig
     public int IdleReturnSec { get; set; } = 90;
     /// <summary>Vibrate when a session finishes or needs input.</summary>
     public bool Vibrate { get; set; } = true;
+    /// <summary>Show a message when a session finishes. The "needs input" message always shows.</summary>
+    public bool FinishToast { get; set; } = true;
     /// <summary>The phone's volume keys switch pages.</summary>
     public bool VolumeKeys { get; set; } = true;
     /// <summary>landscape, portrait or auto (follow the phone). In portrait the widgets are arranged automatically.</summary>

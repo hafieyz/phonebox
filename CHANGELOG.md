@@ -8,6 +8,10 @@
   [Vasilispapg](https://github.com/Vasilispapg)).
 
 **Widgets**
+- CPU and GPU temperature on Macs with Apple silicon (macOS 14 and later), read from the SMC without root or extra
+  tools: the CPU temp metric and the GPU widget's temperature now work on macOS. The keys follow macmon's rule (CPU:
+  Tp/Te/Ts, GPU: Tg). Intel Macs and older macOS versions still show no temperature (#272,
+  [sonvc94](https://github.com/sonvc94)).
 - Trackpad: move, click and scroll the computer's mouse from the phone, with tap to click, two fingers to right-click
   and scroll, hold to drag and an optional edge scroll bar. Mouse control is off until you turn on **Allow controlling
   the mouse from the phone** in the widget's options; Windows, and Linux with `xdotool` under X11 (#250, #251,
@@ -45,6 +49,10 @@
   Claude Code chat titles on the phone** (off by default) shows each chat's title, the name you gave it or the one
   Claude Code wrote, with the folder on the second line. The title is read from the end of the chat's own file on this
   computer and, with the switch off, is not read or sent at all (#261, [Vasilispapg](https://github.com/Vasilispapg)).
+- Sessions: claude-mem's background sessions (the short Claude Code runs in `~/.claude-mem/observer-sessions` that
+  write its memory notes) no longer show up, so they no longer pop up a "finished" message every few minutes.
+  Settings › General › Display › **Show a message when a session finishes** turns that message off for every session;
+  the "needs input" message still shows (#275, [TheRedViperV](https://github.com/TheRedViperV)).
 - Session details show Folder, Status, Started and Last activity in one compact row (two rows on a narrow screen)
   instead of four lines.
 - Every remaining emoji in the panel and the settings page (weather, battery, widget and page icons, Home Assistant

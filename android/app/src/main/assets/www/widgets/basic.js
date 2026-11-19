@@ -20,10 +20,10 @@ W.clock = {
   bare: true, needs: ['tick', 'state', 'weather', 'quotas', 'work'],
   create(box, { o }) {
     const status = o.status !== false ? h('div', 'status') : null;
-    const hh = h('span', 'hh', '--'), mm = h('span', 'mm', '--'), ss = h('span', 'sec'), ap = h('span', 'ap');
+    const hh = h('span', 'hh', '--'), colon = h('span', 'colon', ':'), mm = h('span', 'mm', '--'), ss = h('span', 'sec'), ap = h('span', 'ap');
     const date = o.date !== false ? h('div', 'date') : null;
     const wx = o.weather !== false ? wxBlock() : null;
-    box.append(status || '', h('div', 'clock', hh, h('span', 'colon', ':'), mm, ss, ap), date || '', wx || '');
+    box.append(status || '', h('div', 'clock', hh, colon, mm, ss, ap), date || '', wx || '');
     box.style.setProperty('--tf', (0.84 - (status ? 0.1 : 0) - (date ? 0.11 : 0) - (wx ? 0.2 : 0)).toFixed(2));
     return {
       // without the weather line the clock must not make the panel fetch the weather
@@ -36,6 +36,9 @@ W.clock = {
           ap.textContent = h12 ? (H < 12 ? 'AM' : 'PM') : '';
           mm.textContent = pad(now.getMinutes());
           ss.textContent = cfg.display?.showSeconds === false ? '' : pad(now.getSeconds());
+          // the colon blinks once a second from here, not from a CSS animation: a running animation makes the browser draw a frame
+          // on every display refresh (120 a second on some phones) for something that changes once a second
+          colon.classList.toggle('dim', now.getSeconds() % 2 === 1);
           if (date) date.textContent = now.toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' });
           if (status && now.getSeconds() % 30 === 0) renderStatus(status, o); // battery
         } else if (kind === 'weather') wx?.update();

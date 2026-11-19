@@ -56,7 +56,7 @@ export const FALLBACK_PAGES = [{
 export const DEFAULT_CFG = {
   weather: { city: 'Tallinn', lat: 59.437, lon: 24.745, unit: 'celsius' },
   night: { enabled: true, start: '00:30', end: '07:30', brightness: 0.02 },
-  display: { showSeconds: true, idleReturnSec: 90, vibrate: true, volumeKeys: true },
+  display: { showSeconds: true, idleReturnSec: 90, vibrate: true, finishToast: true, volumeKeys: true },
   pages: FALLBACK_PAGES,
   shortcuts: [],
 };
@@ -846,7 +846,7 @@ export const S_ORDER = { waiting: 0, busy: 1, shell: 2, idle: 3 };
 export const prevStatus = new Map();
 export let workLoaded = false;
 
-/** Vibrates and shows a toast when a session finishes or starts waiting for input. */
+/** Vibrates and shows a toast when a session finishes or starts waiting for input; the finish toast can be turned off. */
 export function notifyTransitions(sessions) {
   for (const s of sessions) {
     const before = prevStatus.get(s.id);
@@ -856,7 +856,7 @@ export function notifyTransitions(sessions) {
         toast(s.waitingFor || t('panel.needsInput'), 'err', s.name);
       } else if (s.status === 'idle' && (before === 'busy' || before === 'shell')) {
         buzz('0,70,110,70');
-        toast(t('panel.sessionFinished', { name: s.name }), 'ok');
+        if (cfg.display?.finishToast !== false) toast(t('panel.sessionFinished', { name: s.name }), 'ok');
       }
     }
     prevStatus.set(s.id, s.status);
@@ -2218,13 +2218,29 @@ export async function poll() {
   setTimeout(poll, 1000);
 }
 
+// The status pulses (session dots, OBS LED, on-air sign, dictation mic, radio equalizer) are stepped here, not by CSS animations:
+// an animation that never ends makes the browser draw a frame on every display refresh while it is on screen, and for these
+// that cost the panel 50 to 100 percentage points of a core each on a 120 Hz phone. beat-N is on during every other run of N
+// ticks of 250 ms (N = 2 is a half-second on, a half-second off). It only moves while something that pulses is on screen
+// (every page is mounted, side by side, and a stack keeps its other cards in place at opacity 0, so being in the page is not enough), and the
+// tick above is skipped when the panel is not visible or the night screen is up.
+const PULSING = '.sess.busy, .sess.shell, .sess.waiting, .obs-pill.on, .w-onair.on, .dc-mic.on, .radio-card.is-playing';
+const pulseShown = (el) => { if (el.closest('.stack-item:not(.active)')) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.right > 0 && r.left < innerWidth && r.bottom > 0 && r.top < innerHeight; };
+let beatN = 0;
+function beat() {
+  if (![...document.querySelectorAll(PULSING)].some(pulseShown)) return;
+  beatN++;
+  const cl = document.documentElement.classList;
+  for (const n of [2, 3, 4]) cl.toggle('beat-' + n, Math.floor(beatN / n) % 2 === 1);
+}
+
 // ---------------------------------------------------------------- start
 buildLayout();
 applyDisplay();
 tick();
 loadWeather();
 setInterval(loadWeather, 15 * 60_000);
-setInterval(() => { if (!nightOn && !idle()) emit('fast'); }, 250);
+setInterval(() => { if (!nightOn && !idle()) { emit('fast'); beat(); } }, 250);
 setInterval(() => { if (online && !idle() && anyNeeds('quotas')) loadQuotas(); }, 30_000);
 setInterval(() => { if (online && !idle() && anyNeeds('calendar')) loadCalendar(); }, 120_000);
 setInterval(() => { if (online && !idle() && anyNeeds('work') && !streaming()) loadWork(); }, 3000);
